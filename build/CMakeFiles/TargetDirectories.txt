@@ -1,0 +1,4 @@
+/home/sorodo/Desktop/med_car/build/CMakeFiles/rebuild_cache.dir
+/home/sorodo/Desktop/med_car/build/CMakeFiles/edit_cache.dir
+/home/sorodo/Desktop/med_car/build/CMakeFiles/test_opencv.dir
+/home/sorodo/Desktop/med_car/build/CMakeFiles/Vision.dir

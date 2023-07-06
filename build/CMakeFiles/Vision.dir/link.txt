@@ -1,0 +1,2 @@
+/usr/bin/arm-linux-gnueabihf-ar qc libVision.a CMakeFiles/Vision.dir/Vision/vision.cpp.o CMakeFiles/Vision.dir/Vision/FastestDet.cpp.o CMakeFiles/Vision.dir/Vision/serial.cpp.o
+/usr/bin/arm-linux-gnueabihf-ranlib libVision.a

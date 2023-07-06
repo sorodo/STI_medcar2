@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/sorodo/Desktop/med_car/Vision/serial.cpp
+serial.h
+/home/sorodo/Desktop/med_car/Vision/serial.h
+
+/home/sorodo/Desktop/med_car/Vision/serial.h
+wiringPi.h
+-
+wiringSerial.h
+-
+unistd.h
+-
+iostream
+-
+
