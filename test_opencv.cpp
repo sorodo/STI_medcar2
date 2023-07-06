@@ -81,7 +81,7 @@ int main()
         {
             carmap.question_flag = 2;
         }
-        while (carmap.question_flag = 1)
+        while (carmap.question_flag == 1)
         {
             while (1)
             {
@@ -123,13 +123,18 @@ int main()
                 port.send_msg(message);
                 cout << message  << endl;
 
-                if (signal == 2 and cur_time-last_time > 2000000) // 2s之内不再进入检测的循环
+                if (signal == 2 and cur_time-last_time > 1500000) // 2s之内不再进入检测的循环
                 { 
                     if (carmap.postion == 'I')// 如果d第一个路口
                     {
                         port.send_msg("el");  
                         carmap.action.push('g');    // 记录第2个动作
                         carmap.postion = 'T';       // 记录任务结束
+                    }
+                    if (carmap.postion == 'S')// 如果再次出发
+                    {
+                        port.send_msg("el");  
+                        carmap.postion = 'O';       
                     }
                     if (carmap.postion == 'O')// 2路口
                     {
@@ -151,6 +156,7 @@ int main()
 
                 if(carmap.postion == 'T' && signal == 3){ 
                     port.send_msg("ez"); // 发送暂时停靠指令
+                    carmap.postion = 'S'; //新的出发
                     break;
                 }   
 
@@ -359,6 +365,11 @@ int main()
                         carmap.action.push('g');    // 记录第1个动作为直行
                         carmap.postion = 'M';
                     }
+                    if (carmap.postion == 'S')// 如果再次出发
+                    {
+                        port.send_msg("el");  
+                        carmap.postion = 'O';       
+                    }
                     if (carmap.postion == 'O')// 第2个路口——避让
                     {
                         port.send_msg("elelel");  // 发送左转
@@ -418,17 +429,11 @@ int main()
                         last_time = clock();
                         cur_time = clock();
                 }
-
-
-                if(carmap.postion == 'T' && signal == 3){ // 经历第二个路口
+                if(carmap.postion == 'T' && signal == 3){ 
                     port.send_msg("ez"); // 发送暂时停靠指令
-                    // 发送病房图
-                    bias_message << carmap.map_OL << carmap.map_OR  << carmap.map_ML << carmap.map_MR << carmap.map_MLL << carmap.map_MLR << carmap.map_MRL << carmap.map_MRR;
-                    bias_message >> message;
-                    port.send_msg(message);
+                    carmap.postion = 'S'; //新的出发
                     break;
-                }    
-
+                }   
                 if(carmap.postion == 'F' && signal == 3){ // 已经循迹完成且检测到终点
                     carmap.question_flag = 0;
                     task_flag = 0;
@@ -441,10 +446,10 @@ int main()
         }
         
     }
-    port.send_msg("et");
+    port.send_msg("ef");
     // cout << mid_x << "///" << signal << endl;
     if (carmap.action.size()>0)
-        cout << "room" << carmap.action.top() << endl;
+        cout << "room" << endl;
     if (waitKey(1) == 27)
         cap.release();
     
