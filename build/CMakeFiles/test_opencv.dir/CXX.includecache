@@ -6,24 +6,6 @@
 
 #IncludeRegexTransform: 
 
-../Vision/FastestDet.h
-opencv2/core.hpp
-../Vision/opencv2/core.hpp
-opencv2/ml.hpp
-../Vision/opencv2/ml.hpp
-opencv2/dnn.hpp
-../Vision/opencv2/dnn.hpp
-opencv2/highgui.hpp
-../Vision/opencv2/highgui.hpp
-opencv2/imgcodecs.hpp
-../Vision/opencv2/imgcodecs.hpp
-opencv2/imgproc.hpp
-../Vision/opencv2/imgproc.hpp
-iostream
-../Vision/iostream
-fstream
--
-
 ../Vision/serial.h
 wiringPi.h
 -
@@ -49,8 +31,6 @@ stack
 -
 time.h
 -
-FastestDet.h
-/home/sorodo/Desktop/med_car/FastestDet.h
 vision.h
 /home/sorodo/Desktop/med_car/vision.h
 serial.h

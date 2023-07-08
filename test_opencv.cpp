@@ -2,7 +2,6 @@
 #include <opencv2/highgui.hpp>
 #include <stack>
 #include <time.h>
-#include "FastestDet.h"
 #include "vision.h"
 #include "serial.h"
 #define CONFIDENCE 0.9
@@ -44,7 +43,7 @@ int main()
     Vision sorodo;
     Serial port;
     cout << "init" << endl;
-    string output_path = "C:/Users/Administrator/Desktop/med_car/cap_v.mp4";
+    string output_path = "/home/sorodo/Desktop/med_car/cap_v.avi";
 	cap.open(0);
     cap.set(CAP_PROP_FRAME_WIDTH, 640);
     cap.set(CAP_PROP_FRAME_HEIGHT, 480);
@@ -58,9 +57,9 @@ int main()
     // FD网络的参数获取
     vector<Vec2f> num_inner;
     // 部署FastestDet
-    FastestDet m_detect(CONFIDENCE, 0.4,true);
-    m_detect.path_names="./testlfile/FastestDet.txt";
-    m_detect.path_onnx="./testlfile/FastestDet.onnx";
+    // FastestDet m_detect(CONFIDENCE, 0.4,true);
+    // m_detect.path_names="./testlfile/FastestDet.txt";
+    // m_detect.path_onnx="./testlfile/FastestDet.onnx";
 
  
     // init
@@ -87,7 +86,9 @@ int main()
                 carmap.question_flag = 2;
             }
         }
-        
+
+        cout << port.read_msg() << endl;
+
         while (carmap.question_flag == 1)
         {
             while (1)
@@ -97,6 +98,7 @@ int main()
                 if (room_nums[0] == 'm')
                 {
                     goal_room = carmap.position_get(room_nums);
+                    task_flag = 1;
                     break;
                 }
             }
@@ -311,28 +313,11 @@ int main()
                 if (room_nums[0] == 'm')
                 {
                     goal_room = carmap.position_get(room_nums);
+                    task_flag = 1;
                     break;
                 }
             }
             
-            while (1)   // 识别病房
-            {
-                cap >> frame;
-                cout << ".." << endl;
-                cv::imshow("454", frame);
-                if (frame.empty())continue;
-                // FD网络参数获取
-                vector<Vec2f> num_inner;
-                vector<Vec4f> result=m_detect.detect(frame);
-                if (result.size())
-                {
-                    goal_room = result[0][3] + 1;   //获取目标病房号
-                    task_flag = 1;
-                    port.send_msg("eg");
-                    break;
-                }
-            }
-
             while (task_flag == 1) // 寻路
             { 
                 // port.send_msg("b110er");
