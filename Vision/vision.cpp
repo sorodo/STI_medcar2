@@ -123,9 +123,11 @@ vector<int> Vision::cross_detect(Mat binary_img)
     
     if (up > WIDTH and left < WIDTH and right < WIDTH)
         signal = 1; //1表示前进
-    if (left > WIDTH and right > WIDTH)
+    if (left > WIDTH and right > WIDTH and down > WIDTH
+    or ((up > WIDTH and down > WIDTH) and (left > WIDTH or right > WIDTH)))
+
         signal = 2; //2表示路口
-    if (up == 0 and down == 0 and left == 0 and right == 0)
+    if (up == 0 and left == 0 and right == 0)
         signal = 3; //3表示终点
     vector<int> order = {mid_x, 0, signal};
     // cout << signal << " , " << mid_x << " , " << up << " "<< sig_up << endl;
