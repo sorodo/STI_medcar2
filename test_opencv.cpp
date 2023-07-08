@@ -18,19 +18,20 @@ public:
     int question_flag;  //提高题的flag
     char postion; // 现在的位置‘L，R，M，O，I, S’分别记录各个路口的名称
     clock_t stop_clk; // 避让停止用时钟
-    void position_get(char *num_data);
+    int position_get(char *num_data);
 };
 
-void Car_map::position_get(char *num_data)
+int Car_map::position_get(char *num_data)
 {
-    map_OL = num_data[0] - '0';
-    map_OR = num_data[1] - '0';
-    map_ML = num_data[2] - '0';
-    map_MR = num_data[3] - '0';
-    map_MLL = num_data[4] - '0';
-    map_MLR = num_data[5] - '0';
-    map_MRL = num_data[6] - '0';
-    map_MRR = num_data[7] - '0';
+    map_OL = num_data[1] - '0';
+    map_OR = num_data[2] - '0';
+    map_ML = num_data[3] - '0';
+    map_MR = num_data[4] - '0';
+    map_MLL = num_data[5] - '0';
+    map_MLR = num_data[6] - '0';
+    map_MRL = num_data[7] - '0';
+    map_MRR = num_data[8] - '0';
+    return num_data[9] - '0';
 }
 
 
@@ -73,23 +74,29 @@ int main()
     carmap.question_flag = 0;
     while (1)
     {
-       if (port.read_msg() == "1")
+        char *orders;
+        orders = port.read_msg();
+        if (orders[0] == 'd')
         {
-            carmap.question_flag = 1;
+            if (orders[1] == '1')
+            {
+                carmap.question_flag = 1;
+            }
+            if (orders[1] == '2')
+            {
+                carmap.question_flag = 2;
+            }
         }
-        if (port.read_msg() == "2")
-        {
-            carmap.question_flag = 2;
-        }
+        
         while (carmap.question_flag == 1)
         {
             while (1)
             {
                 char *room_nums;
                 room_nums = port.read_msg();
-                if (room_nums[0] != '\0')
+                if (room_nums[0] == 'm')
                 {
-                    carmap.position_get(room_nums);
+                    goal_room = carmap.position_get(room_nums);
                     break;
                 }
             }
@@ -97,7 +104,7 @@ int main()
 
             while (task_flag == 1)
             {
-                  cap >> frame;
+                cap >> frame;
                 if (frame.empty())continue;
 
                 cv::waitKey(1);
@@ -123,8 +130,12 @@ int main()
                 port.send_msg(message);
                 cout << message  << endl;
 
+                cur_time = clock();
+
                 if (signal == 2 and cur_time-last_time > 1500000) // 2s之内不再进入检测的循环
                 { 
+                    cur_time = clock();
+                    last_time = clock();
                     if (carmap.postion == 'I')// 如果d第一个路口
                     {
                         port.send_msg("el");  
@@ -154,13 +165,13 @@ int main()
                     }
                 }
 
-                if(carmap.postion == 'T' && signal == 3){ 
+                if(carmap.postion == 'T' and signal == 3 and cur_time-last_time > 1500000){ 
                     port.send_msg("ez"); // 发送暂时停靠指令
                     carmap.postion = 'S'; //新的出发
                     break;
                 }   
 
-                if(carmap.postion == 'F' && signal == 3){ // 已经循迹完成且检测到终点
+                if(carmap.postion == 'F' && signal == 3 and cur_time-last_time > 1500000){ // 已经循迹完成且检测到终点
                         task_flag = 2;
                         port.send_msg("ef"); 
                         break;
@@ -198,7 +209,7 @@ int main()
                     port.send_msg("et");
                     last_time = clock();
                     cur_time = clock();
-                    while (signal !=2 or cur_time-last_time < 700000)
+                    while (signal !=2 or cur_time-last_time < 2000000)
                     // 检测到路口或者超时时候停止
                     {
                         cap >> frame;
@@ -297,12 +308,12 @@ int main()
             {
                 char *room_nums;
                 room_nums = port.read_msg();
-                if (room_nums[0] != '\0')
+                if (room_nums[0] == 'm')
                 {
-                    carmap.position_get(room_nums);
+                    goal_room = carmap.position_get(room_nums);
                     break;
                 }
-            } 
+            }
             
             while (1)   // 识别病房
             {
@@ -429,12 +440,12 @@ int main()
                         last_time = clock();
                         cur_time = clock();
                 }
-                if(carmap.postion == 'T' && signal == 3){ 
+                if(carmap.postion == 'T' && signal == 3 and cur_time-last_time > 1500000){ 
                     port.send_msg("ez"); // 发送暂时停靠指令
                     carmap.postion = 'S'; //新的出发
                     break;
                 }   
-                if(carmap.postion == 'F' && signal == 3){ // 已经循迹完成且检测到终点
+                if(carmap.postion == 'F' && signal == 3 and cur_time-last_time > 1500000){ // 已经循迹完成且检测到终点
                     carmap.question_flag = 0;
                     task_flag = 0;
                     port.send_msg("ef"); 
