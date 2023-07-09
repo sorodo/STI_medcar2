@@ -14,7 +14,6 @@ public:
     Serial(/* args */);
     ~Serial();
     int my_buf_con = 0;
-    char *msg_get;
     char my_buf[100];
     void send_msg(const char* msg);
     char* read_msg();

@@ -43,10 +43,10 @@ Mat Vision::filter_line(Mat img, int eff)
 //颜色分割
 void Vision::color_cut(InputArray img, char color, OutputArray dst)
 {
-    Scalar red0_low = Scalar(0, 100, 120);
-    Scalar red1_low = Scalar(160, 100, 120);
-    Scalar red0_up = Scalar(10, 230, 250);
-    Scalar red1_up = Scalar(180, 230, 250);
+    Scalar red0_low = Scalar(0, 80, 80);
+    Scalar red1_low = Scalar(160, 80, 80);
+    Scalar red0_up = Scalar(10, 255, 250);
+    Scalar red1_up = Scalar(180, 255, 250);
     Mat hsv_img;
     cvtColor(img, hsv_img, COLOR_BGR2HSV);
     if (color == RED)
@@ -123,9 +123,10 @@ vector<int> Vision::cross_detect(Mat binary_img)
     
     if (up > WIDTH and left < WIDTH and right < WIDTH)
         signal = 1; //1表示前进
-    if (left > WIDTH and right > WIDTH and down > WIDTH
-    or ((up > WIDTH and down > WIDTH) and (left > WIDTH or right > WIDTH)))
-
+    if ((left > WIDTH and right > WIDTH and up > WIDTH) or
+    ((down > WIDTH)and
+    ((left > WIDTH and left < WIDTH + 4) or 
+    (right > WIDTH and right < WIDTH + 4))))
         signal = 2; //2表示路口
     if (up == 0 and left == 0 and right == 0)
         signal = 3; //3表示终点

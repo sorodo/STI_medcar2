@@ -2,6 +2,7 @@
 #include <opencv2/highgui.hpp>
 #include <stack>
 #include <time.h>
+#include <string.h>
 #include "vision.h"
 #include "serial.h"
 #define CONFIDENCE 0.9
@@ -43,7 +44,7 @@ int main()
     Vision sorodo;
     Serial port;
     cout << "init" << endl;
-    string output_path = "/home/sorodo/Desktop/med_car/cap_v.avi";
+    string output_path = "appsrc ! autovideoconvert ! filesink location=/home/sorodo/Desktop/med_car/cap001.avi";
 	cap.open(0);
     cap.set(CAP_PROP_FRAME_WIDTH, 640);
     cap.set(CAP_PROP_FRAME_HEIGHT, 480);
@@ -75,8 +76,10 @@ int main()
     {
         char *orders;
         orders = port.read_msg();
+        //cout << "read" << endl;
         if (orders[0] == 'd')
         {
+            cout << "in" << endl;
             if (orders[1] == '1')
             {
                 carmap.question_flag = 1;
@@ -87,7 +90,8 @@ int main()
             }
         }
 
-        cout << port.read_msg() << endl;
+
+        cout << "read: " << port.read_msg() << endl;
 
         while (carmap.question_flag == 1)
         {
@@ -95,14 +99,14 @@ int main()
             {
                 char *room_nums;
                 room_nums = port.read_msg();
-                if (room_nums[0] == 'm')
+                if (room_nums[0] == 'm' and strlen(room_nums) == 10)
                 {
                     goal_room = carmap.position_get(room_nums);
                     task_flag = 1;
                     break;
                 }
             }
-
+            port.send_msg("eg");
 
             while (task_flag == 1)
             {
@@ -110,13 +114,13 @@ int main()
                 if (frame.empty())continue;
 
                 cv::waitKey(1);
-                cv::namedWindow("4K",1);
+                // cv::namedWindow("4K",1);
                 cv::resize(frame, frame, Size(160, 120));
                 cv::Rect m_select = Rect(20,0,140,120);
 
                 frame = frame(m_select);
                 sorodo.color_cut(frame, 'r', dst);
-                cv::imshow("4K", dst);
+                // cv::imshow("4K", dst);
                 cv::waitKey(1);
                 // 获取信息
                 order = sorodo.cross_detect(dst);
@@ -130,8 +134,8 @@ int main()
                 else  bias_message << "b" << mid_x;
                 bias_message >> message;
                 port.send_msg(message);
-                cout << message  << endl;
-
+                // cout << message  << endl;
+                cout << carmap.postion << "sig" << signal << endl;
                 cur_time = clock();
 
                 if (signal == 2 and cur_time-last_time > 1500000) // 2s之内不再进入检测的循环
@@ -141,17 +145,20 @@ int main()
                     if (carmap.postion == 'I')// 如果d第一个路口
                     {
                         port.send_msg("el");  
+                        cout << "left"  << endl;
                         carmap.action.push('g');    // 记录第2个动作
                         carmap.postion = 'T';       // 记录任务结束
                     }
                     if (carmap.postion == 'S')// 如果再次出发
                     {
                         port.send_msg("el");  
+                        cout << "again"  << endl;
                         carmap.postion = 'O';       
                     }
                     if (carmap.postion == 'O')// 2路口
                     {
                         carmap.action.push('g');    
+                        cout << "agian"  << endl;
                         if (goal_room == carmap.map_ML)
                         {
                             port.send_msg("el");  
@@ -169,138 +176,135 @@ int main()
 
                 if(carmap.postion == 'T' and signal == 3 and cur_time-last_time > 1500000){ 
                     port.send_msg("ez"); // 发送暂时停靠指令
+                    cout << "temp" << endl;
                     carmap.postion = 'S'; //新的出发
-                    break;
                 }   
 
                 if(carmap.postion == 'F' && signal == 3 and cur_time-last_time > 1500000){ // 已经循迹完成且检测到终点
                         task_flag = 2;
                         port.send_msg("ef"); 
+                        cout << "finsh" << endl;
                         break;
                 }
             }
 
             
-            while (task_flag == 2) // 返程任务
-            {
-                cap >> frame;
-                if (frame.empty())continue;
-                // imshow("capread",frame);
-
-                cv::namedWindow("result",0);
-                cv::imshow("result",frame);
-
-                resize(frame, frame, Size(160, 120));
-                sorodo.color_cut(frame, 'r', dst);
-                // imshow("4K", dst);
-                // 获取信息
-                order = sorodo.cross_detect(dst);
-                mid_x = order[0];   // 中心x
-                signal = order[2];
-                // 传递偏差值
-                std::stringstream bias_message;
-                char message[4];
-                if (mid_x < 10)bias_message << "b00" << mid_x;
-                else if (mid_x < 100)bias_message << "b0" << mid_x;
-                else  bias_message << "b" << mid_x;
-                bias_message >> message;
-                port.send_msg(message);
-
-                if (signal == 3)// 先倒车
-                {
-                    port.send_msg("et");
-                    last_time = clock();
-                    cur_time = clock();
-                    while (signal !=2 or cur_time-last_time < 2000000)
-                    // 检测到路口或者超时时候停止
-                    {
-                        cap >> frame;
-                        if (frame.empty())continue;
-                        resize(frame, frame, Size(160, 120));
-                        sorodo.color_cut(frame, 'r', dst);
-                        // imshow("4K", dst);
-                        // 获取信息
-                        order = sorodo.cross_detect(dst);
-                        mid_x = order[0];   // 中心x
-                        signal = order[2];
-                        // 传递偏差值
-                        std::stringstream bias_message;
-                        char message[4];
-                        if (mid_x < 10)bias_message << "b00" << mid_x;
-                        else if (mid_x < 100)bias_message << "b0" << mid_x;
-                        else  bias_message << "b" << mid_x;
-                        bias_message >> message;
-                        port.send_msg(message);
-                        cur_time = clock();
-                    }
-                    port.send_msg("es");
-                }
-        
-                cur_time = clock();
-                if (signal == 2 and cur_time-last_time > 10000000)
-                {// 在路口且冷却时间之后
-                    std::stringstream bias_message;
-                    char message[4];
-                    port.send_msg("es");//停止一会
-                    char turn_order = carmap.action.top();
-                    carmap.action.pop();
-                    switch (turn_order)
-                    {
-                    case 'l':
-                        turn_order = 'r';
-                        bias_message << "e" << turn_order;
-                        break;
-                    case 'r':
-                        turn_order = 'l';
-                        bias_message << "e" << turn_order;
-                        break;
-                    case 'g':
-                        task_flag = 3;
-                        bias_message << "eg";
-                        break;
-                    default:
-                        break;
-                    }
+            // while (task_flag == 2) // 返程任务
+            // {
+            //     cap >> frame;
+            //     if (frame.empty())continue;
+            //     // imshow("capread",frame);
+            //     cv::namedWindow("result",0);
+            //     cv::imshow("result",frame);
+            //     resize(frame, frame, Size(160, 120));
+            //     sorodo.color_cut(frame, 'r', dst);
+            //     // imshow("4K", dst);
+            //     // 获取信息
+            //     order = sorodo.cross_detect(dst);
+            //     mid_x = order[0];   // 中心x
+            //     signal = order[2];
+            //     // 传递偏差值
+            //     std::stringstream bias_message;
+            //     char message[4];
+            //     if (mid_x < 10)bias_message << "b00" << mid_x;
+            //     else if (mid_x < 100)bias_message << "b0" << mid_x;
+            //     else  bias_message << "b" << mid_x;
+            //     bias_message >> message;
+            //     port.send_msg(message);
+            //     if (signal == 3)// 先倒车
+            //     {
+            //         port.send_msg("et");
+            //         last_time = clock();
+            //         cur_time = clock();
+            //         while (signal !=2 or cur_time-last_time < 2000000)
+            //         // 检测到路口或者超时时候停止
+            //         {
+            //             cap >> frame;
+            //             if (frame.empty())continue;
+            //             resize(frame, frame, Size(160, 120));
+            //             sorodo.color_cut(frame, 'r', dst);
+            //             // imshow("4K", dst);
+            //             // 获取信息
+            //             order = sorodo.cross_detect(dst);
+            //             mid_x = order[0];   // 中心x
+            //             signal = order[2];
+            //             // 传递偏差值
+            //             std::stringstream bias_message;
+            //             char message[4];
+            //             if (mid_x < 10)bias_message << "b00" << mid_x;
+            //             else if (mid_x < 100)bias_message << "b0" << mid_x;
+            //             else  bias_message << "b" << mid_x;
+            //             bias_message >> message;
+            //             port.send_msg(message);
+            //             cur_time = clock();
+            //         }
+            //         port.send_msg("es");
+            //     }     
+            //     cur_time = clock();
+            //     if (signal == 2 and cur_time-last_time > 10000000)
+            //     {// 在路口且冷却时间之后
+            //         std::stringstream bias_message;
+            //         char message[4];
+            //         port.send_msg("es");//停止一会
+            //         char turn_order = carmap.action.top();
+            //         carmap.action.pop();
+            //         switch (turn_order)
+            //         {
+            //         case 'l':
+            //             turn_order = 'r';
+            //             bias_message << "e" << turn_order;
+            //             break;
+            //         case 'r':
+            //             turn_order = 'l';
+            //             bias_message << "e" << turn_order;
+            //             break;
+            //         case 'g':
+            //             task_flag = 3;
+            //             bias_message << "eg";
+            //             break;
+            //         default:
+            //             break;
+            //         }
                     
-                    bias_message >> message;
-                    port.send_msg(message);
-                }
-            } 
+            //         bias_message >> message;
+            //         port.send_msg(message);
+            //     }
+            // } 
 
-            while (task_flag == 3) // 最后的直线返程
-            {
-                cap >> frame;
-                if (frame.empty())continue;
-                // imshow("capread",frame);
+            // while (task_flag == 3) // 最后的直线返程
+            // {
+            //     cap >> frame;
+            //     if (frame.empty())continue;
+            //     // imshow("capread",frame);
 
-                cv::namedWindow("result",0);
-                cv::imshow("result",frame);
+            //     cv::namedWindow("result",0);
+            //     cv::imshow("result",frame);
 
-                resize(frame, frame, Size(160, 120));
-                sorodo.color_cut(frame, 'r', dst);
-                // imshow("4K", dst);
-                // 获取信息
-                order = sorodo.cross_detect(dst);
-                mid_x = order[0];   // 中心x
-                signal = order[2];
-                // 停止
-                if (signal == 3)
-                {
-                    port.send_msg("es");
-                    carmap.question_flag = 0;
-                    task_flag = 0;
-                    break;
-                }
-                // 传递偏差值
-                std::stringstream bias_message;
-                char message[4];
-                if (mid_x < 10)bias_message << "b00" << mid_x;
-                else if (mid_x < 100)bias_message << "b0" << mid_x;
-                else  bias_message << "b" << mid_x;
-                bias_message >> message;
-                port.send_msg(message);
-            }
- 
+            //     resize(frame, frame, Size(160, 120));
+            //     sorodo.color_cut(frame, 'r', dst);
+            //     // imshow("4K", dst);
+            //     // 获取信息
+            //     order = sorodo.cross_detect(dst);
+            //     mid_x = order[0];   // 中心x
+            //     signal = order[2];
+            //     // 停止
+            //     if (signal == 3)
+            //     {
+            //         port.send_msg("es");
+            //         carmap.question_flag = 0;
+            //         task_flag = 0;
+            //         break;
+            //     }
+            //     // 传递偏差值
+            //     std::stringstream bias_message;
+            //     char message[4];
+            //     if (mid_x < 10)bias_message << "b00" << mid_x;
+            //     else if (mid_x < 100)bias_message << "b0" << mid_x;
+            //     else  bias_message << "b" << mid_x;
+            //     bias_message >> message;
+            //     port.send_msg(message);
+            // }
+            carmap.question_flag = 0;
         }
         
 
@@ -310,30 +314,28 @@ int main()
             {
                 char *room_nums;
                 room_nums = port.read_msg();
-                if (room_nums[0] == 'm')
+                if (room_nums[0] == 'm' and strlen(room_nums) == 10)
                 {
                     goal_room = carmap.position_get(room_nums);
                     task_flag = 1;
                     break;
                 }
             }
-            
+            port.send_msg("eg");
             while (task_flag == 1) // 寻路
-            { 
-                // port.send_msg("b110er");
-                // cout<< "ss" << endl;
+            {
                 // 读取摄像头
                 cap >> frame;
                 if (frame.empty())continue;
-
+                
                 cv::waitKey(1);
-                cv::namedWindow("4K",1);
+                // cv::namedWindow("4K",1);
                 cv::resize(frame, frame, Size(160, 120));
                 cv::Rect m_select = Rect(20,0,140,120);
 
                 frame = frame(m_select);
                 sorodo.color_cut(frame, 'r', dst);
-                cv::imshow("4K", dst);
+                // cv::imshow("4K", dst);
                 cv::waitKey(1);
                 // 获取信息
                 order = sorodo.cross_detect(dst);
@@ -348,16 +350,16 @@ int main()
                 bias_message >> message;
                 port.send_msg(message);
                 cout << message  << endl;
-            
+
                 cur_time = clock();
-                cout << "curtime: " << cur_time << "last_time" << last_time << endl;
+                // cout << "curtime: " << cur_time << "last_time" << last_time << endl;
                 if (signal == 2 and cur_time-last_time > 2000000) // 2s之内不再进入检测的循环
                 {    // 到路口时候检测数字
                                     
                         
                     if (carmap.postion == 'I')// 如果在第1个路口
                     {
-                        port.send_msg("egegeg");  // 发送直行命令
+                        port.send_msg("eg");  // 发送直行命令
                         carmap.action.push('g');    // 记录第1个动作为直行
                         carmap.postion = 'M';
                     }
@@ -369,6 +371,7 @@ int main()
                     if (carmap.postion == 'O')// 第2个路口——避让
                     {
                         port.send_msg("elelel");  // 发送左转
+                        carmap.action.push('g');    // 记录第1个动作为直行
                         carmap.postion = 'T';       // 更改为临时位点
                     }
                     if (carmap.postion == 'T')     //  避让之后
@@ -436,8 +439,8 @@ int main()
                     port.send_msg("ef"); 
                     break;
                 }
-                
             }
+            carmap.question_flag = 0;
 
         }
         

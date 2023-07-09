@@ -31,6 +31,8 @@ stack
 -
 time.h
 -
+string.h
+-
 vision.h
 /home/sorodo/Desktop/med_car/vision.h
 serial.h

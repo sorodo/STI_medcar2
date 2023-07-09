@@ -39,6 +39,7 @@ char* Serial::read_msg()
         cout <<"serial open failed." << endl;
         my_buf[0] = '\0';
     }
+    
     if (serialDataAvail(fd)>0)
     {
         my_buf[my_buf_con] = serialGetchar(fd);
@@ -46,19 +47,26 @@ char* Serial::read_msg()
         if (my_buf[my_buf_con] == '?')
         {
             my_buf[my_buf_con] = '\0';
-            msg_get = my_buf;
         }
         else if(my_buf[my_buf_con] == '!')
         {
             my_buf_con = 0;
-            msg_get[0] = '\0';
         }
         else{
             my_buf_con++;
         }
-        
+        my_buf[my_buf_con +1] ='\0';
     }
 
+    // int i = 0;
+    // for (; i< serialDataAvail(fd); i++)
+    // {
+    //     my_buf[i] = serialGetchar(fd);
+    // }
+    // cout << " len " << serialDataAvail(fd) << endl;
+    // my_buf[i+1] = '\0';
+
     serialFlush(fd);
-    return msg_get;
+    serialClose(fd);
+    return my_buf;
 }
